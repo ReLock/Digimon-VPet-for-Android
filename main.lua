@@ -1,9 +1,42 @@
 local backgrounds = display.newGroup()
 BG = display.newImage('normBG.png')
+backgrounds:insert( BG )
+--hearts = display.newImage('heart.png')
+--backgrounds:insert( hearts )
+
+require "digiArray"
 json = require("json")
 mime = require("mime")
 digmonPath = system.pathForFile('digi.json', system.DocumentsDirectory)
-digiSound = audio.loadSound( 'egg.wav' )
+mandatoryKeys = {}
+global = {
+	feeding = false,
+	isTouching = false,
+	tempMath = 164/100,
+}
+
+function getManKeys()
+	return {
+		happiness = 20,
+		stage = 'egg',
+		type = 'egg',
+		name = 'Egg',
+		masterTimestamp = os.time(),
+		lastEvolveTimestamp = os.time(),
+		hunger = 20,
+		power = 0,
+		wins = 0,
+		losses = 0,
+		happinessNeglect = 0,
+		foodNeglect = 0,
+		hiddenValue = math.random(-1000,1000),
+		evolveList = {'egg'},
+		hasHunger = false,
+		hasHappiness = true,
+		weight = 0.3,
+	}
+end
+--digiSound = audio.loadSound( 'egg.wav' )
 local canvas = display.newGroup()
 
 
@@ -11,7 +44,7 @@ function encrypt(str, key)
 	local result = ''
 	local char
 	local keychar
-	local temp = function(...) print('the') end
+	local temp = function(...) print(...) end
 	the = xpcall(function()
 		if str and key then
 
@@ -33,7 +66,7 @@ function decrypt(str, key)
 	local result = ''
 	local char
 	local keychar
-	local temp = function(...) print('the') end
+	local temp = function(...) print(...) end
 	the = xpcall(function()
 		if str and key and mime.decode("base64")(str) then
 			str = mime.decode("base64")(str)
@@ -53,39 +86,60 @@ function decrypt(str, key)
 end
 
  
-		
+	
 
  
 function saveDigi()
 	the = xpcall(function()
-		local key = 'asdasdasd'
-		local configFile = io.open(digmonPath, 'wb')
+		local key = '982134jh78234523$@#%3tuihn io5u4t FG"^#45 ;34n'
+		local configFile = io.open(digmonPath, 'w')
 		tempObj = pDigimonObj
-		configFile:write(encrypt(json.encode(pDigimon), key))
+		local digiString = encrypt(json.encode(pDigimon), key)
+		if type(digiString)=='string' then
+			configFile:write(digiString)
+		end
+		
 		configFile:close()
 	end, function(...) print(...) end)
+		if configFile then configFile:close() end
 
 end
 
-function loadDigi()
-	local key = 'asdasdasd'
+function loadDigi(forceNew)
+	local key = '982134jh78234523$@#%3tuihn io5u4t FG"^#45 ;34n'
 	tempFile = io.open(digmonPath, 'r')
 
 	if tempFile then tempData = tempFile:read("*a") 	tempFile:close()end
 	
-	the = xpcall(function() pDigimon = json.decode(decrypt(tempData,key))  end, function(...) print('asdasd') end)
-	if not(tempFile) or not(the) then
+	
+	xpcall(function() pDigimon = json.decode(decrypt(tempData,key))  end, function(...) print('Failed to load digimon, is it missing? Corrupt? WHAT DID YOU DO TO IT?!') end)
+	if not(statCheck(pDigimon)) or not(tempFile) or not(pDigimon) or forceNew then
 
 		pDigimon = {}
-		pDigimon.wiggleCount = 0
-		pDigimon.stage = 'egg'
-		pDigimon.type = 'egg'
+		pDigimon = getManKeys()
+		
 		saveDigi()
+	else
 	end
-	digiSound = audio.loadSound( pDigimon.type..'.wav' )
 	pDigimonObj = display.newImage(pDigimon.type..'.png')
 	pDigimonObj.x,  pDigimonObj.y = display.contentWidth/2,display.contentHeight/2
 	canvas:insert( pDigimonObj )
+end
+
+function statCheck(digi)
+	if type(digi) == 'table' then
+		for i,v in pairs(getManKeys()) do
+			if not(digi[i]) and not(digi[i] == false) then
+				return false
+			end
+		end
+		return true
+	end
+	return false
+end 
+
+function statBuild(digi)
+	return(getManKeys())
 end
 
 loadDigi()
@@ -182,7 +236,7 @@ function eggWiggle()
 		timer.performWithDelay( 280, wigglePos )
 		timer.performWithDelay( 285, wigglePos )
 		timer.performWithDelay( 290, wigglePos )
-		timer.performWithDelay( 295, function() wigglePos() wiggling = false 		 end )
+		timer.performWithDelay( 295, function() wigglePos() wiggling = false 			pDigimonObj.rotation = 0 end )
 		
 	else
 		return false
@@ -191,8 +245,6 @@ end
 
 jumpingHappy = false
 function digiJump()
-
-
 	if not(jumpingHappy) then
 	jumpingHappy = true
 
@@ -270,44 +322,267 @@ function digiJump()
 		timer.performWithDelay( 280, jumpPos )
 		timer.performWithDelay( 285, jumpPos )
 		timer.performWithDelay( 290, jumpPos )
-		timer.performWithDelay( 295, function() jumpPos() jumpingHappy = false end )
+		timer.performWithDelay( 295, function() jumpPos() jumpingHappy = false 	pDigimonObj.rotation = 0 end )
 		
 	else
 		return false
 	end
 end
 
-function evolveDigimon()
-print(2)
-	if pDigimon.stage == 'egg' then
-		pDigimon.stage = 'baby'
-		pDigimon.type = 'botamon'
+function evolveDigimon(forceEvolve)
+	local evolvList = {} 
+	for i,v in pairs(digimonArray[pDigimon.type].evolvesTo) do
+		v = digimonArray[v]
+		local bool = false
+		local currentLevels = { happiness = pDigimon.happiness, time = (os.time()-pDigimon.lastEvolveTimestamp)}
+		local tempVal = false
+		if v.requirements then
+			tempVal = false
+			for k,d in  pairs(v.requirements) do
 
-		canvas:remove( pDigimonObj )
-		pDigimonObj = display.newImage('botamon.png')
-		canvas:insert( pDigimonObj )
-		pDigimonObj.x,  pDigimonObj.y = display.contentWidth/2,display.contentHeight/2
-		pDigimonObj:rotate( 0)
+
+				if (k == 'evolvedFrom') or currentLevels[k] >= d  then 
+					if not(k == 'evolvedFrom') then
+						tempVal = v
+					else
+						tempVal = false
+						for l,o in ipairs(pDigimon.evolveList) do
+							if o == d then 
+								tempVal = v
+								else
+							end
+						end
+					end
+					
+				elseif not(currentLevels[k] >= d) then
+					tempVal = false
+					break
+				end
+			end
+			if tempVal then table.insert(evolvList,v) end
+		end
 	end
-	audio.dispose(digiSound)
-	digiSound = audio.loadSound( pDigimon.type..'.wav' )
+	if #evolvList >0 or forceEvolve then 
+	table.sort(evolvList, function(a,b) return #a.requirements>=#b.requirements end)
 	
-	audio.play(audio.loadSound( 'evolve.wav' ),{ channel=1, loops=1, fadein=0 })
+	local tempVal = evolvList[1]
+	if forceEvolve then tempVal = digimonArray[forceEvolve] end
+		pDigimon.lastEvolveTimestamp = os.time()
+		pDigimon.type = tempVal.type
+		pDigimon.name = tempVal.name
+		pDigimon.hasHunger = tempVal.hasHunger
+		pDigimon.hasHappiness = tempVal.hasHappiness
 
-	setListener() 
+		pDigimon.stage = tempVal.stage
+		table.insert(pDigimon.evolveList, tempVal.type)
+		canvas:remove( pDigimonObj )
+		pDigimonObj = nil
+		pDigimonObj = display.newImage(pDigimon.type..'.png')
+		canvas:insert( pDigimonObj )
+		pDigimonObj.rotation = 0 --need to move this so that it's at the end of each eggwiggle.
+		pDigimonObj.x,  pDigimonObj.y = display.contentWidth/2,display.contentHeight/2
+		setListener() 
+		audio.play(audio.loadSound( 'evolve.wav' ),{ channel=1, loops=0, fadein=0 })
+		return true
+		
+	end
+		
+
+
+
+
+	
 end
 
 
 
+function makeHappy()
+	if pDigimon.happiness <= -1 then
+		pDigimon.happiness = 2
+	elseif pDigimon.happiness > 100 then
+		pDigimon.happiness = 100
+	else
+		pDigimon.happiness = pDigimon.happiness + 0.20
+	end
+end
+
+hud = {}
+action = {}
+hudObj = {
+	buttons = {
+		feed = display.newImage('feedButton.png', 30,display.contentHeight-94),
+		poke = display.newImage('pokeButton.png', 130,display.contentHeight-94),
+		reset = display.newImage('resetButton.png', 385,display.contentHeight-94),
+	},
+	happinessFaded = display.newImage('happinessBarFaded.png', display.contentWidth-169, 45),
+	happiness = display.newImage('happinessBar.png', display.contentWidth-169, 45),
+	hunger = display.newImage('foodBar.png', 5, 45),
+	hungerFaded = display.newImage('foodBarFaded.png', 5, 45),
+	
+
+}
+guiGroup = display.newGroup()
+guiGroup:insert(hudObj.buttons.poke)
+guiGroup:insert(hudObj.buttons.feed)
+guiGroup:insert(hudObj.buttons.reset)
+guiGroup:insert(hudObj.hungerFaded)
+guiGroup:insert(hudObj.happinessFaded)
+guiGroup:insert(hudObj.happiness)
+guiGroup:insert(hudObj.hunger)
+
+hudObj.happiness:setMask(graphics.newMask('foodBarMask.png'))
+hudObj.hunger:setMask(graphics.newMask('foodBarMask.png'))
+
+
+function hud.happiness(repeating)
+		
+		if pDigimon.happiness > 100 then
+			pDigimon.happiness = 100
+		elseif (pDigimon.happiness <= -1 ) then
+			pDigimon.happiness = (-1)
+		elseif pDigimon.happiness <=0 and not(pDigimon.happiness <=-1 ) then
+			pDigimon.happinessNeglect = pDigimon.happinessNeglect + 1
+			pDigimon.happiness = (-1)
+		else
+			if not(jumpingHappy) and not(wiggling) and not(global.isTouching) then pDigimon.happiness = pDigimon.happiness - 0.005 end
+		end
+
+		hudObj.happiness.maskX = (-163)+(global.tempMath*math.ceil(pDigimon.happiness))
+	
+end
+
+
+function hud.hunger(repeating)
+
+	if not repeating then
+
+	else
+		if pDigimon.hunger > 100 then
+			pDigimon.hunger = 100
+		elseif (pDigimon.hunger <= -1 ) then
+			pDigimon.hunger = (-1)
+		elseif pDigimon.hunger <=0 and not(pDigimon.hunger <=-1 ) then
+			pDigimon.foodNeglect = pDigimon.foodNeglect + 1
+			pDigimon.hunger = (-1)
+		else
+			pDigimon.hunger = pDigimon.hunger - 0.001
+		end	
+		hudObj.hunger.maskX = (-163)+(global.tempMath*math.ceil(pDigimon.hunger))
+	end
+end
+
+function hud.energy()
+
+
+end
 
 
 
+function action.poke()
+	if pDigimon.happiness >= 5 then
+		pDigimon.happiness = pDigimon.happiness -5
+	end
+end
+
+function action.feed()
+	if pDigimon.hunger == (-1) then
+		pDigimon.hunger = 2
+	else
+		pDigimon.hunger = pDigimon.hunger+0.25
+	end
+end
+
+function action.reset()
+	canvas:remove( pDigimonObj )
+	pDigimonObj = nil
+	loadDigi(true)
+	guiGroup.isVisible = true
+	setListener() 
+end
+
+function action.die()
+	print('You\'re a terrible person... you know that right?')
+	evolveDigimon('dead')
+end
 
 
+hud.energy()
+hud.happiness()
+hud.hunger()
 
 
+hudObj.buttons.feed:addEventListener('touch', function(event)
+	if pDigimon.hasHunger then
+	
+		if  event.phase == 'began' then
+			global.feeding = true
+		elseif event.phase == 'ended' then
+			global.feeding = false
+		end
+		
+	end
+		if event.x > hudObj.buttons.feed.x+25 or event.x < hudObj.buttons.feed.x-25  or event.y > hudObj.buttons.feed.y+25 or event.y < hudObj.buttons.feed.y-25  then
+			global.feeding = false
+		end
+end)
+
+hudObj.buttons.reset:addEventListener('tap', function(event)
+	if event.numTaps > 1 then
+		action.reset()
+	end
+end)
+
+hudObj.buttons.poke:addEventListener('touch', function(event)
+
+	if event.phase == 'began'  then
+		action.poke()
+	end
+end)
 
 
+deathCounter = false
+Runtime:addEventListener( "enterFrame", function(event)
+	
+	if not(pDigimon.type == 'dead') then
+		if pDigimon.hasHappiness then
+			hudObj.happiness.isVisible = true
+			hudObj.happinessFaded.isVisible = true
+			hud.happiness(true)
+		else
+			hudObj.happiness.isVisible = false			
+			hudObj.happinessFaded.isVisible = false			
+		end
+
+		if pDigimon.hasHunger then
+			hud.hunger(true)
+			hudObj.hungerFaded.isVisible = true
+			hudObj.hunger.isVisible = true
+		else
+			hudObj.hungerFaded.isVisible = false
+			hudObj.hunger.isVisible = false
+		end	
+
+		evolveDigimon()
+	else
+		guiGroup.isVisible = false
+	end
+	
+	if pDigimon.happiness == -1 and pDigimon.hunger == -1 then
+		if deathCounter then
+			if (os.time() - deathCounter) > 10 then
+				if not(pDigimon.type == 'dead') then action.die() end
+			end
+		else
+			deathCounter = os.time()
+		end
+	end
+
+
+	if global.feeding then
+		action.feed()
+	end
+	
+end)
 
 Runtime:addEventListener( "system", function(event)
 	if event.type == 'applicationSuspend' or event.type == 'applicationExit' then
@@ -319,30 +594,33 @@ end)
 
 function setListener() 
 	pDigimonObj:addEventListener('touch', function(event)
+		if event.phase == 'moved' then
+			makeHappy()
+		end
+		if event.phase == 'began' then
+			global.isTouching = true
+		end
+		
 		if event.phase == 'ended' then
 			if pDigimon.type == 'egg' then		
 				if not(wiggling) then
-				audio.play( digiSound, { channel=1, loops=1, fadein=0 })
 					eggWiggle()
-					
 					timer.performWithDelay( 300, eggWiggle )
-					timer.performWithDelay( 600, 
-					function() 
-					pDigimon.wiggleCount = pDigimon.wiggleCount + 1 
-						if pDigimon.stage == 'egg' and pDigimon.wiggleCount == 5 then evolveDigimon()  end
-					end )
-					
 				end
 				
-			elseif pDigimon.type=='botamon' then
-					if not(jumpingHappy) then
-						digiJump()
-						audio.play( digiSound, { channel=1, loops=1, fadein=0 }  ) 
-					end
+			elseif pDigimon.type == 'dead' then		
+				action.reset()
 			else
+				if not(jumpingHappy) then
+					digiJump()
 				
+					
+				end
+		
 			end
+			global.isTouching = false
 		end
+	
 	end)
 end
 setListener() 

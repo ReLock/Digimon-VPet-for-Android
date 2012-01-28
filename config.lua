@@ -6,6 +6,10 @@ application =
 	{
 		width = 480,
 		height = 800,
-		scale = "ZoomStretch"
+		scale = "ZoomStretch",
+        fps = 60,
+        antialias = false,
 	},
+	
+	launchPad = false,
 }
