@@ -1,0 +1,13 @@
+settings = 
+{
+	android =
+	{
+		plist =
+		{
+				UIApplicationExitsOnSuspend = false,			   
+		},			
+	},	
+
+}
+	
+	

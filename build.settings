@@ -1,0 +1,26 @@
+settings = 
+{
+    orientation =
+    {
+        default = "landscapeRight",
+        supported =
+        {
+          "landscapeRight",
+        }
+    },
+	
+   androidPermissions =
+   {
+       "android.permission.VIBRATE",
+       "android.permission.BILLING",
+   },
+	android =
+	{
+		plist =
+		{
+			launchPad = false,
+			UIApplicationExitsOnSuspend = false,			   
+		},			
+	},	
+
+}

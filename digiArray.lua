@@ -44,6 +44,9 @@ digimonArray = {
 		name='Koromon',
 		hasHunger=true,
 		hasHappiness=true,
+		power = 5,
+		defence = 5,
+		weight = 2,
 	},
 
 	agumon = {
@@ -54,6 +57,9 @@ digimonArray = {
 		name='Agumon',
 		hasHunger=true,
 		hasHappiness=true,
+		weight = 10,
+		power = 25,
+		defence = 15,
 	},
 
 	betamon = {
@@ -64,6 +70,9 @@ digimonArray = {
 		name='Betamon',
 		hasHunger=true,
 		hasHappiness=true,
+		power = 15,
+		defence = 25,
+		weight = 8,
 	},
 
 
